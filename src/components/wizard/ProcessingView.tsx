@@ -210,12 +210,17 @@ export function ProcessingView({ onComplete }: ProcessingViewProps) {
           const base64Images = await Promise.all(
             productData.photos.slice(0, 3).map(p => fileToBase64(p))
           );
+          console.log('=== LLAMANDO API ANALYZE ===');
+          console.log('Imágenes a analizar:', base64Images.length);
+          
           const res = await fetch('/api/image/analyze', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ images: base64Images, productData, brandData: settings })
           });
           const data = await res.json();
+          console.log('Respuesta API Analyze:', data.success ? 'SUCCESS' : 'ERROR', data.error || '');
+          
           if (data.success) {
             analysis = data.data;
             imageToImagePrompt = data.data.imageToImagePrompt || null;
@@ -226,6 +231,44 @@ export function ProcessingView({ onComplete }: ProcessingViewProps) {
         } catch (e) {
           console.error('Analyze error:', e);
         }
+        
+        // Si no se generó el prompt, crear uno de fallback
+        if (!imageToImagePrompt) {
+          console.log('=== GENERANDO PROMPT FALLBACK ===');
+          const materiales = productData.selectedMaterials?.length > 0 
+            ? productData.selectedMaterials.join(' y ') 
+            : 'madera';
+          
+          imageToImagePrompt = `Te proporciono la imagen de un producto. Analiza cuidadosamente su forma, materiales, colores y función.
+
+Descripción: ${productData.name} artesanal de madera. Elaborado en ${materiales} por ${settings.brandName}. Producto artesanal colombiano de alta calidad.
+
+Actúa como fotógrafo publicitario profesional y diseñador de producto.
+
+OBJETIVO:
+
+Generar una imagen fotorrealista del producto en su entorno de uso natural y típico.
+
+INSTRUCCIONES:
+
+- Mantén EXACTAMENTE el diseño del producto (no lo rediseñes).
+- Conserva proporciones, logotipos, colores y materiales.
+- Ubica el producto en: hogar elegante.
+- Muestra el producto en una situación realista de uso.
+- Iluminación profesional tipo fotografía comercial.
+- Profundidad de campo suave (background ligeramente desenfocado).
+- Estilo: fotografía publicitaria premium.
+- Cámara: lente 50mm o 85mm, alta resolución.
+- Composición limpia y moderna.
+- Sin texto, sin marcas de agua.
+- El producto debe ser el protagonista visual.
+
+ENTREGA:
+
+Imagen fotorrealista de alta calidad.`;
+          console.log('Prompt fallback generado');
+        }
+        
         updateStep('analyze', 'completed');
         setOverallProgress(35);
 
