@@ -35,6 +35,7 @@ export interface SEOContent {
   meta_description: string;
   long_description: string;
   html_block: string;
+  alt_texts?: string[];
 }
 
 // Metadata de imagen

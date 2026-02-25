@@ -176,15 +176,24 @@ export function ProcessingView({ onComplete }: ProcessingViewProps) {
           const materiales = productData.selectedMaterials?.length > 0 
             ? productData.selectedMaterials.join(' y ') 
             : 'madera';
-          const dimensiones = `${productData.length} x ${productData.width} x ${productData.height} ${settings.unit}`;
+          
+          // Solo mostrar dimensiones si hay valores válidos
+          const hasDims = productData.length > 0 || productData.width > 0 || productData.height > 0;
+          const dimensiones = hasDims 
+            ? `${productData.length || 0} x ${productData.width || 0} x ${productData.height || 0} ${settings.unit}`
+            : 'Dimensiones no especificadas';
           
           seoContent = {
-            keyword: `${productData.name.toLowerCase()} ${materiales}`,
+            keyword: `${productData.name.toLowerCase()} de ${materiales}`,
             title: `${productData.name} | ${settings.brandName} - Artesanal`.substring(0, 60),
             slug: generateSlug(productData.name),
-            meta_description: `Descubre ${productData.name} artesanal de ${materiales}. Hecho a mano por ${settings.brandName}. Diseño único para tu hogar. ¡Envíos a Colombia!`.substring(0, 155),
-            long_description: `${productData.name} es una pieza artesanal única creada con dedicación por los maestros artesanos de ${settings.brandName}. Elaborada en ${materiales} de la más alta calidad, esta pieza refleja la tradición y el cuidado artesanal colombiano.\n\nCada pieza es elaborada a mano, lo que garantiza que recibirás un producto único con su propia personalidad. Los detalles en el diseño y el acabado impecable hacen de este producto una opción perfecta para quienes valoran la autenticidad.\n\nDimensiones: ${dimensiones}.\n\n${settings.brandName} - Artesanos de madera en Colombia.`,
-            html_block: `<strong>REF: </strong>${productData.ref}\n${dimensiones}\n(${val} Valoraciones) Global ${rating}/5: <span style="font-size: 150%; color: orange;">★★★★<span style="background: linear-gradient(to right, orange ${pct}%, transparent ${100 - pct}%); -webkit-background-clip: text; color: transparent;">★</span></span>\nPieza artesanal única hecha con amor. 🪵✨`
+            meta_description: `Descubre ${productData.name} de ${materiales} artesanal. Hecho a mano por ${settings.brandName}. Pieza única para tu hogar. ¡Envíos a Colombia!`.substring(0, 155),
+            long_description: `<h2>${productData.name} Artesanal de ${materiales}</h2>\n\n<p>El ${productData.name.toLowerCase()} que tienes frente a ti representa la esencia del arte popular colombiano. Cada pieza es elaborada por los maestros artesanos de ${settings.brandName}, quienes dedican horas de trabajo minucioso para garantizarte un producto de excelencia.</p>\n\n<h2>Características y Beneficios</h2>\n\n<p>Este producto destaca por su elaboración en ${materiales} de primera calidad. Sus dimensiones de ${dimensiones} lo hacen perfecto para cualquier espacio de tu hogar. Lo que realmente lo hace especial es que cada pieza lleva el sello único de la artesanía colombiana.</p>\n\n<p>En ${settings.brandName} nos enorgullece mantener viva la tradición de la madera en Colombia. Cada producto es único y puede presentar ligeras variaciones en el tono, lo cual añade carácter y autenticidad.</p>\n\n<p><strong>REF: ${productData.ref}</strong></p>`,
+            html_block: `<strong>REF: </strong>${productData.ref}\n${dimensiones}\n(${val} Valoraciones) Global ${rating}/5: <span style="font-size: 150%; color: orange;">★★★★<span style="background: linear-gradient(to right, orange ${pct}%, transparent ${100 - pct}%); -webkit-background-clip: text; color: transparent;">★</span></span>\nPieza artesanal única hecha con amor. 🪵✨`,
+            alt_texts: [
+              `${productData.name} de ${materiales} artesanal - ${settings.brandName}`,
+              `${productData.name} hecho a mano - ${settings.brandName}`
+            ]
           };
           console.log('Using fallback SEO content');
         }

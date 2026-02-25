@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
 
     console.log('=== SEO GENERATE API ===');
     console.log('Product:', productData?.name);
-    console.log('Brand:', brandData?.brandName);
+    console.log('Dimensions:', productData?.length, productData?.width, productData?.height);
 
     // Validar datos de entrada
     if (!productData?.name) {
@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
     const zai = await ZAI.create();
 
     // Generar números aleatorios para el HTML
-    const valoraciones = Math.floor(Math.random() * (2000 - 800 + 1)) + 800;
-    const rating = (Math.random() * (4.9 - 4.4) + 4.4).toFixed(2);
+    const valoraciones = Math.floor(Math.random() * (1800 - 500 + 1)) + 500;
+    const rating = (Math.random() * (4.9 - 4.45) + 4.45).toFixed(2);
     const ratingPercent = Math.round(parseFloat(rating) * 20);
 
     // Materiales y categorías con valores por defecto
@@ -32,59 +32,86 @@ export async function POST(request: NextRequest) {
     const categorias = productData.selectedCategories?.length > 0 
       ? productData.selectedCategories.join(', ') 
       : 'decoración';
-    const dimensiones = `${productData.length || 0} x ${productData.width || 0} x ${productData.height || 0} ${brandData?.unit || 'cm'}`;
+    
+    // Construir dimensiones solo si hay valores válidos
+    const hasDimensions = (productData.length > 0 || productData.width > 0 || productData.height > 0);
+    const dimensiones = hasDimensions 
+      ? `${productData.length || 0} x ${productData.width || 0} x ${productData.height || 0} ${brandData?.unit || 'cm'}`
+      : 'Dimensiones no especificadas';
+    
     const brandName = brandData?.brandName || 'Bonetto con Amor';
     const brandDesc = brandData?.brandDescription || 'Artesanos de madera en Colombia';
+    const ref = productData.ref || 'N/A';
+    const productName = productData.name;
+    const userDescription = productData.description || 'No proporcionada';
 
-    // Prompt optimizado para generar contenido SEO de calidad
-    const systemPrompt = `Eres un experto en SEO para e-commerce y WooCommerce. Genera contenido optimizado para Yoast SEO (semáforo verde).
+    // Prompt optimizado con reglas de Yoast SEO
+    const systemPrompt = `Rol: Eres un experto en Redacción SEO de alto rendimiento, especializado en optimizar productos para WooCommerce utilizando los estándares estrictos de Yoast SEO. Tu misión es redactar fichas de producto para "Bonetto con Amor" (artesanías en madera en Colombia).
 
-REGLAS IMPORTANTES:
-- Responde SOLO en formato JSON válido, sin texto adicional
-- El JSON debe tener EXACTAMENTE estas claves: keyword, title, slug, meta_description, long_description, html_block
-- NO incluyas precios
-- Usa español neutro y profesional
+I. REGLAS ESTRICTAS DE YOAST SEO (Semáforo Verde):
 
-INFORMACIÓN DE LA MARCA:
-- Nombre: ${brandName}
-- Descripción: ${brandDesc}
+Frase Clave Objetivo: Debe ser un término de búsqueda coherente (ej: "Caja de madera para regalo").
 
-INFORMACIÓN DEL PRODUCTO:
-- Nombre: ${productData.name}
-- Referencia: ${productData.ref || 'N/A'}
+Introducción: La frase clave debe aparecer en la primera frase del primer párrafo.
+
+Densidad: La frase clave debe aparecer entre 5 y 7 veces a lo largo del texto.
+
+Distribución en Subtítulos: La frase clave debe estar presente en al menos un subtítulo H2 o H3.
+
+Atributos ALT: Al final del texto, indica el texto ALT sugerido para las imágenes, el cual debe contener la frase clave completa.
+
+Meta descripción: Entre 120 y 155 caracteres. Debe incluir la frase clave.
+
+SEO Title: Debe iniciar o contener la frase clave. Longitud recomendada: 50-60 caracteres (ancho óptimo).
+
+Slug: Debe ser corto, usar solo minúsculas y contener la frase clave separada por guiones.
+
+Enlaces:
+- Saliente: Incluir un enlace a un artículo de Wikipedia relacionado (Madera, Pino, Regalo, etc.).
+- Interno: Incluir un enlace ficticio a la categoría correspondiente [URL-de-la-categoría].
+
+Longitud: El texto debe superar siempre las 300 palabras.
+
+II. REGLAS DE LEGIBILIDAD (Experiencia de Usuario):
+
+Voz Activa: El 100% del texto debe usar voz activa ("Nosotros fabricamos", "Tú decoras"). Prohibido el uso de voz pasiva.
+
+Palabras de Transición: Al menos el 30% de las frases deben contener conectores (En primer lugar, Además, Por lo tanto, Por consiguiente, Sin embargo, En consecuencia, Del mismo modo).
+
+Párrafos Cortos: Máximo 150 palabras por sección bajo cada subtítulo.
+
+III. FORMATO Y RESTRICCIONES DE BONETTO:
+
+NO incluir precios. Nunca menciones valores monetarios.
+
+DATOS DEL PRODUCTO A PROCESAR:
+- Nombre: ${productName}
+- Referencia: ${ref}
 - Dimensiones: ${dimensiones}
 - Categorías: ${categorias}
 - Materiales: ${materiales}
-- Descripción del usuario: ${productData.description || 'No proporcionada'}
+- Descripción del usuario: ${userDescription}
+- Marca: ${brandName}
+- Descripción de la marca: ${brandDesc}
 
-REQUISITOS ESPECÍFICOS:
+RESPONDE ÚNICAMENTE EN FORMATO JSON con esta estructura exacta:
+{
+  "keyword": "frase clave objetivo (ej: caja de madera artesanal)",
+  "title": "Título SEO de 50-60 caracteres con la frase clave",
+  "slug": "url-amigable-con-frase-clave",
+  "meta_description": "Meta descripción de 120-155 caracteres incluyendo la frase clave",
+  "long_description": "Descripción larga de más de 300 palabras con estructura HTML (h2, h3, párrafos), enlaces Wikipedia y categoría, usando voz activa y conectores. Debe terminar con: REF: ${ref}",
+  "html_block": "Bloque HTML técnico (ver formato abajo)",
+  "alt_texts": ["Texto ALT 1 para imagen con frase clave", "Texto ALT 2 para imagen con frase clave"]
+}
 
-1. keyword: La palabra clave principal (ej: "caja de madera artesanal")
-
-2. title: Título SEO de 50-60 caracteres. Formato: "Nombre del Producto | Marca - Beneficio"
-   Ejemplo: "Caja Baúl de Madera | Bonetto con Amor - Artesanal"
-
-3. slug: URL amigable en minúsculas, sin acentos, con guiones
-   Ejemplo: "caja-baul-madera-artesanal"
-
-4. meta_description: DESCRIPCIÓN META DE 140-155 CARACTERES EXACTOS.
-   Debe incluir: nombre del producto, material, beneficio principal y marca.
-   Ejemplo: "Descubre nuestra caja baúl artesanal de madera pino. Diseño único hecho a mano por Bonetto con Amor. Perfecta para organizar con estilo. ¡Envíos a todo Colombia!"
-
-5. long_description: DESCRIPCIÓN LARGA de 200-300 palabras.
-   Estructura:
-   - Párrafo 1: Introducción del producto con sus características principales
-   - Párrafo 2: Beneficios y usos del producto
-   - Párrafo 3: Detalles de materiales y craftsmanship
-   - Párrafo 4: Información de la marca y cierre
-
-6. html_block: Usa EXACTAMENTE este formato:
-<strong>REF: </strong>${productData.ref || 'N/A'}
+FORMATO DEL html_block (usa EXACTAMENTE esta estructura):
+<strong>REF: </strong>${ref}
 ${dimensiones}
 (${valoraciones} Valoraciones) Global ${rating}/5: <span style="font-size: 150%; color: orange;">★★★★<span style="background: linear-gradient(to right, orange ${ratingPercent}%, transparent ${100 - ratingPercent}%); -webkit-background-clip: text; color: transparent;">★</span></span>
-[FRASE CREATIVA ESPECÍFICA DEL PRODUCTO con emojis apropiados, máximo 100 caracteres]`;
+[Frase creativa única con emojis relacionada específicamente con el producto, máximo 100 caracteres]`;
 
-    console.log('Calling Z.ai API...');
+    console.log('Calling Z.ai API with Yoast SEO prompt...');
 
     const completion = await zai.chat.completions.create({
       messages: [
@@ -94,7 +121,14 @@ ${dimensiones}
         },
         {
           role: 'user',
-          content: 'Genera el contenido SEO completo en formato JSON. Recuerda: meta_description DEBE tener entre 140-155 caracteres.'
+          content: `Genera el contenido SEO completo para "${productName}" siguiendo TODAS las reglas de Yoast SEO. 
+          
+IMPORTANTE:
+- La meta_description debe tener entre 120-155 caracteres
+- La long_description debe superar 300 palabras
+- Incluye enlaces a Wikipedia relevantes
+- Usa voz activa y conectores
+- Termina con REF: ${ref}`
         }
       ],
       thinking: { type: 'disabled' }
@@ -114,21 +148,32 @@ ${dimensiones}
       seoContent = JSON.parse(cleanResponse);
       console.log('JSON parsed successfully');
 
-      // Validar y corregir meta_description si es muy corta
-      if (!seoContent.meta_description || seoContent.meta_description.length < 140) {
-        const metaBase = `${productData.name} artesanal de ${materiales}. Hecho a mano por ${brandName}. `;
-        const metaExtra = seoContent.meta_description || '';
-        seoContent.meta_description = (metaBase + metaExtra).substring(0, 155);
+      // Validar y corregir meta_description si es muy corta o muy larga
+      if (!seoContent.meta_description || seoContent.meta_description.length < 120 || seoContent.meta_description.length > 155) {
+        seoContent.meta_description = generateMetaDescription(productName, materiales, brandName, categorias);
       }
 
       // Validar long_description si es muy corta
-      if (!seoContent.long_description || seoContent.long_description.length < 150) {
-        seoContent.long_description = generateFallbackLongDescription(productData, brandName, materiales, categorias, dimensiones);
+      if (!seoContent.long_description || seoContent.long_description.length < 300) {
+        seoContent.long_description = generateLongDescription(productName, materiales, brandName, categorias, dimensiones, ref, userDescription);
+      }
+
+      // Asegurar que el html_block tenga el formato correcto
+      if (!seoContent.html_block || !seoContent.html_block.includes('REF:')) {
+        seoContent.html_block = generateHtmlBlock(ref, dimensiones, valoraciones, rating, ratingPercent, productName);
       }
 
     } catch (parseError) {
       console.log('JSON parse failed, using enhanced fallback');
-      seoContent = generateFallbackSEO(productData, brandName, materiales, categorias, dimensiones, valoraciones, rating, ratingPercent);
+      seoContent = generateFullFallback(productName, ref, materiales, categorias, dimensiones, brandName, userDescription, valoraciones, rating, ratingPercent);
+    }
+
+    // Validar que alt_texts exista
+    if (!seoContent.alt_texts || !Array.isArray(seoContent.alt_texts)) {
+      seoContent.alt_texts = [
+        `${productName} de ${materiales} artesanal - ${brandName}`,
+        `${productName} hecho a mano en ${materiales} - ${brandName}`
+      ];
     }
 
     console.log('=== SEO CONTENT GENERATED ===');
@@ -144,80 +189,133 @@ ${dimensiones}
     console.error('=== ERROR IN SEO GENERATE ===');
     console.error('Error:', error);
 
-    // Generar contenido de fallback completo en caso de error
-    const { productData, brandData } = await request.json().catch(() => ({ productData: {}, brandData: {} }));
-    const materiales = productData?.selectedMaterials?.length > 0 
-      ? productData.selectedMaterials.join(' y ') 
-      : 'madera';
-    const categorias = productData?.selectedCategories?.length > 0 
-      ? productData.selectedCategories.join(', ') 
-      : 'decoración';
-    const dimensiones = `${productData?.length || 0} x ${productData?.width || 0} x ${productData?.height || 0} ${brandData?.unit || 'cm'}`;
-    const brandName = brandData?.brandName || 'Bonetto con Amor';
-    const valoraciones = Math.floor(Math.random() * (2000 - 800 + 1)) + 800;
-    const rating = (Math.random() * (4.9 - 4.4) + 4.4).toFixed(2);
-    const ratingPercent = Math.round(parseFloat(rating) * 20);
+    try {
+      const body = await request.json();
+      const { productData, brandData } = body;
+      
+      const materiales = productData?.selectedMaterials?.length > 0 
+        ? productData.selectedMaterials.join(' y ') 
+        : 'madera';
+      const categorias = productData?.selectedCategories?.length > 0 
+        ? productData.selectedCategories.join(', ') 
+        : 'decoración';
+      const hasDimensions = (productData?.length > 0 || productData?.width > 0 || productData?.height > 0);
+      const dimensiones = hasDimensions 
+        ? `${productData?.length || 0} x ${productData?.width || 0} x ${productData?.height || 0} ${brandData?.unit || 'cm'}`
+        : 'Dimensiones no especificadas';
+      const brandName = brandData?.brandName || 'Bonetto con Amor';
+      const valoraciones = Math.floor(Math.random() * (1800 - 500 + 1)) + 500;
+      const rating = (Math.random() * (4.9 - 4.45) + 4.45).toFixed(2);
+      const ratingPercent = Math.round(parseFloat(rating) * 20);
+      const ref = productData?.ref || 'N/A';
+      const productName = productData?.name || 'Producto artesanal';
+      const userDescription = productData?.description || '';
 
-    const fallbackContent = generateFallbackSEO(productData, brandName, materiales, categorias, dimensiones, valoraciones, rating, ratingPercent);
+      const fallbackContent = generateFullFallback(productName, ref, materiales, categorias, dimensiones, brandName, userDescription, valoraciones, rating, ratingPercent);
 
-    return NextResponse.json({
-      success: true,
-      data: fallbackContent
-    });
+      return NextResponse.json({
+        success: true,
+        data: fallbackContent
+      });
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Error generando contenido SEO' },
+        { status: 500 }
+      );
+    }
   }
 }
 
-// Función para generar fallback robusto
-function generateFallbackSEO(productData: any, brandName: string, materiales: string, categorias: string, dimensiones: string, valoraciones: number, rating: string, ratingPercent: number) {
-  const name = productData?.name || 'Producto artesanal';
-  const ref = productData?.ref || 'N/A';
+// ============================================
+// FUNCIONES AUXILIARES
+// ============================================
 
-  return {
-    keyword: `${name.toLowerCase()} ${materiales}`.trim(),
-    title: `${name} | ${brandName} - Artesanal de ${materiales}`.substring(0, 60),
-    slug: name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
-    meta_description: generateMetaDescription(name, materiales, brandName),
-    long_description: generateFallbackLongDescription(productData, brandName, materiales, categorias, dimensiones),
-    html_block: `<strong>REF: </strong>${ref}
+function generateMetaDescription(name: string, materiales: string, brandName: string, categorias: string): string {
+  const options = [
+    `Descubre ${name} de ${materiales} artesanal. Hecho a mano por ${brandName}. Pieza única para tu hogar. ¡Envíos a Colombia!`,
+    `${name} artesanal en ${materiales} por ${brandName}. Diseño exclusivo colombiano. Calidad garantizada. ¡Cómpralo ya!`,
+    `Hermoso ${name} de ${materiales} hecho a mano. ${brandName} te ofrece calidad artesanal. ¡Envíos a todo el país!`
+  ];
+
+  for (const opt of options) {
+    if (opt.length >= 120 && opt.length <= 155) return opt;
+  }
+
+  return `${name} de ${materiales} artesanal por ${brandName}. Pieza única para tu hogar. ¡Envíos a Colombia!`.substring(0, 155);
+}
+
+function generateLongDescription(name: string, materiales: string, brandName: string, categorias: string, dimensiones: string, ref: string, userDesc: string): string {
+  const wikiLink = getWikipediaLink(materiales);
+  const categorySlug = categorias.split(',')[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-');
+  
+  return `<h2>${name} Artesanal de ${materiales}</h2>
+
+<p>En primer lugar, el <strong>${name.toLowerCase()}</strong> que tienes frente a ti representa la esencia del arte popular colombiano. Además, cada pieza es elaborada por los maestros artesanos de ${brandName}, quienes dedican horas de trabajo minucioso para garantizarte un producto de excelencia. Por consiguiente, al elegir este producto, apoyas la tradición artesanal de nuestro país.</p>
+
+<h2>Características y Beneficios</h2>
+
+<p>Por lo tanto, este ${name.toLowerCase()} destaca por su elaboración en <a href="${wikiLink}" target="_blank" rel="noopener">${materiales}</a> de primera calidad. Del mismo modo, sus dimensiones de ${dimensiones} lo hacen perfecto para cualquier espacio de tu hogar. Sin embargo, lo que realmente lo hace especial es que cada pieza lleva el sello único de la artesanía colombiana.</p>
+
+<p>En consecuencia, puedes utilizarlo en tu sala, dormitorio o incluso como un regalo memorable. Además, su diseño versátil se adapta a estilos decorativos modernos, rústicos o tradicionales. Por supuesto, la calidad de los materiales garantiza durabilidad y belleza por años.</p>
+
+<h2>Tradición Artesanal de ${brandName}</h2>
+
+<p>Asimismo, en ${brandName} nos enorgullece mantener viva la tradición de la madera en Colombia. En primer lugar, seleccionamos cuidadosamente cada pieza de ${materiales}. Luego, nuestros artesanos la transforman con técnicas transmitidas por generaciones. Por lo tanto, cuando adquieres este ${name.toLowerCase()}, llevas a tu hogar un pedazo de nuestra historia.</p>
+
+<p>${userDesc ? `Nota especial: ${userDesc}` : 'Cada producto es único, por lo que pueden existir ligeras variaciones en el tono de la madera, lo cual añade carácter y autenticidad a tu pieza.'}</p>
+
+<p>Finalmente, te invitamos a explorar más productos en nuestra <a href="/categoria/${categorySlug}/">categoría de ${categorias.split(',')[0]}</a> y descubrir la magia de la artesanía colombiana.</p>
+
+<p><strong>REF: ${ref}</strong></p>`;
+}
+
+function generateHtmlBlock(ref: string, dimensiones: string, valoraciones: number, rating: string, ratingPercent: number, productName: string): string {
+  const frasesCreativas = [
+    `Pieza artesanal única que transforma tu hogar. 🪵✨`,
+    `Artesanía colombiana hecha con amor. 🎁✨`,
+    `Diseño exclusivo para tu hogar. 🏡✨`,
+    `Tradición y calidad en cada detalle. 🪵❤️`
+  ];
+  const fraseCreativa = frasesCreativas[Math.floor(Math.random() * frasesCreativas.length)];
+  
+  return `<strong>REF: </strong>${ref}
 ${dimensiones}
 (${valoraciones} Valoraciones) Global ${rating}/5: <span style="font-size: 150%; color: orange;">★★★★<span style="background: linear-gradient(to right, orange ${ratingPercent}%, transparent ${100 - ratingPercent}%); -webkit-background-clip: text; color: transparent;">★</span></span>
-Pieza artesanal única hecha con amor. 🪵✨`
+${fraseCreativa}`;
+}
+
+function generateFullFallback(productName: string, ref: string, materiales: string, categorias: string, dimensiones: string, brandName: string, userDesc: string, valoraciones: number, rating: string, ratingPercent: number): any {
+  const keyword = `${productName.toLowerCase()} de ${materiales}`.substring(0, 50);
+  const slug = productName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  
+  return {
+    keyword: keyword,
+    title: `${productName} | ${brandName} - Artesanal de ${materiales}`.substring(0, 60),
+    slug: slug,
+    meta_description: generateMetaDescription(productName, materiales, brandName, categorias),
+    long_description: generateLongDescription(productName, materiales, brandName, categorias, dimensiones, ref, userDesc),
+    html_block: generateHtmlBlock(ref, dimensiones, valoraciones, rating, ratingPercent, productName),
+    alt_texts: [
+      `${productName} de ${materiales} artesanal - ${brandName}`,
+      `${productName} hecho a mano en ${materiales} - ${brandName}`,
+      `${productName} artesanal colombiano - ${brandName}`
+    ]
   };
 }
 
-function generateMetaDescription(name: string, materiales: string, brandName: string): string {
-  const options = [
-    `Descubre ${name} artesanal de ${materiales}. Hecho a mano por ${brandName}. Diseño único que transforma tu hogar. ¡Envíos a Colombia!`,
-    `${name} de ${materiales} hecho a mano por ${brandName}. Artesanía colombiana de calidad. Pieza única para tu hogar. ¡Cómpralo ahora!`,
-    `Hermoso ${name} artesanal en ${materiales}. Diseño exclusivo de ${brandName}. Calidad artesanal colombiana. ¡Envíos a todo el país!`
-  ];
-
-  // Seleccionar la opción que tenga entre 140-155 caracteres
-  for (const opt of options) {
-    if (opt.length >= 140 && opt.length <= 155) return opt;
+function getWikipediaLink(materiales: string): string {
+  const links: Record<string, string> = {
+    'pino': 'https://es.wikipedia.org/wiki/Pino',
+    'cedro': 'https://es.wikipedia.org/wiki/Cedro',
+    'roble': 'https://es.wikipedia.org/wiki/Roble',
+    'nogal': 'https://es.wikipedia.org/wiki/Nogal',
+    'bambú': 'https://es.wikipedia.org/wiki/Bambú',
+    'madera': 'https://es.wikipedia.org/wiki/Madera'
+  };
+  
+  const materialLower = materiales.toLowerCase();
+  for (const [key, link] of Object.entries(links)) {
+    if (materialLower.includes(key)) return link;
   }
-
-  // Si ninguna funciona, ajustar la primera
-  const base = `Descubre ${name} artesanal de ${materiales}. Hecho a mano por ${brandName}. `;
-  if (base.length < 140) {
-    return base + 'Diseño único para tu hogar. ¡Envíos a Colombia!';
-  }
-  return base.substring(0, 155);
-}
-
-function generateFallbackLongDescription(productData: any, brandName: string, materiales: string, categorias: string, dimensiones: string): string {
-  const name = productData?.name || 'Producto artesanal';
-  const userDesc = productData?.description || '';
-
-  return `${name} es una pieza artesanal única creada con dedicación por los maestros artesanos de ${brandName}. Elaborada en ${materiales} de la más alta calidad, esta pieza refleja la tradición y el cuidado artesanal colombiano.
-
-Cada ${name.toLowerCase()} es elaborado a mano, lo que garantiza que recibirás una pieza única con su propia personalidad y carácter. Los detalles en la madera, las líneas de diseño y el acabado impecable hacen de este producto una opción perfecta para quienes valoran la autenticidad y la calidad.
-
-Ideal para ${categorias.toLowerCase()}, este producto no solo cumple una función práctica sino que también añade calidez y estilo a cualquier espacio. Su diseño versátil se adapta perfectamente a hogares modernos, rústicos o tradicionales.
-
-Dimensiones: ${dimensiones}. Cada pieza puede presentar ligeras variaciones debido a su naturaleza artesanal, lo que la hace aún más especial.
-
-${userDesc ? `Nota del artesano: ${userDesc}` : ''}
-
-${brandName} - Artesanos de madera en Colombia, transformando la madera en obras de arte con amor desde hace generaciones.`;
+  return 'https://es.wikipedia.org/wiki/Madera';
 }
