@@ -128,36 +128,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [results, setResults] = useState<ProcessingResults>(defaultResults);
 
   const saveSettings = useCallback(async () => {
+    console.log('=== SAVE SETTINGS ===');
+    console.log('User:', user?.uid);
+    console.log('IsGuest:', isGuest);
+    console.log('Settings to save:', settings);
+    
     if (user) {
       try {
         const docRef = doc(db, 'users', user.uid);
         await setDoc(docRef, { settings }, { merge: true });
+        console.log('✓ Settings saved to Firestore');
       } catch (error) {
-        console.error('Error saving settings:', error);
+        console.error('❌ Error saving settings to Firestore:', error);
         throw error;
       }
     } else if (isGuest) {
       localStorage.setItem('bonetto-guest-settings', JSON.stringify(settings));
+      console.log('✓ Settings saved to localStorage');
     }
   }, [user, isGuest, settings]);
 
   const loadSettings = useCallback(async () => {
-    if (!user) return;
+    if (!user) return null;
+    
+    console.log('=== LOAD SETTINGS ===');
+    console.log('User:', user.uid);
     
     try {
       const docRef = doc(db, 'users', user.uid);
       const docSnap = await getDoc(docRef);
       
+      console.log('Document exists:', docSnap.exists());
+      
       if (docSnap.exists()) {
         const data = docSnap.data();
+        console.log('Loaded settings:', data.settings);
         return {
           ...defaultSettings,
           ...data.settings
         } as AccountSettings;
       }
     } catch (error) {
-      // Silenciar error de permisos de Firebase (común si las reglas no están configuradas)
-      // console.error('Error loading settings:', error);
+      console.error('❌ Error loading settings from Firestore:', error);
     }
     return null;
   }, [user]);
